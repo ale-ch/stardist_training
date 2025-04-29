@@ -16,8 +16,8 @@ def configure_model():
 
     # model = StarDist2D(conf, name='stardist_v3', basedir='models/instance_segmentation_2D_akoya')
 
-def instantiate_model(conf):
-    model = StarDist2D(conf, name='stardist', basedir='models')
+def instantiate_model(conf, basedir, model_name):
+    model = StarDist2D(conf, name=model_name, basedir=basedir)
     print("Instantiated model") 
 
     return model
