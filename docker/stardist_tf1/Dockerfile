@@ -1,26 +1,39 @@
-# Dockerfile for TensorFlow 1.x Model Export Environment
-FROM continuumio/miniconda3:latest
+# Base image
 
-# Create and set up Conda environment
-RUN conda create -y -n tf1_model_export python=3.7 && \
-    echo "conda activate tf1_model_export" >> ~/.bashrc
+FROM debian:12.5
 
-# Install packages
-RUN /opt/conda/envs/tf1_model_export/bin/conda install -y pip && \
-    /opt/conda/envs/tf1_model_export/bin/pip install \
-    "tensorflow<2" \
-    "csbdeep[tf1]" \
-    "stardist[tf1]"
+# Install system dependencies in one step to reduce layers
+RUN apt-get update && \
+    apt-get install -y \
+        build-essential \
+        wget \
+        tabix \
+        libreadline-dev \
+        libcairo2-dev \
+        git \
+        procps \
+        g++ \
+        python3 \
+        python3-pip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set environment variables
-ENV PATH /opt/conda/envs/tf1_model_export/bin:$PATH
+# Set up Miniconda
+ENV CONDA_DIR=/opt/conda
+ENV MINICONDA_HOME=~/miniconda3
+ENV PATH=$CONDA_DIR/bin:$PATH
 
-# Set working directory
-WORKDIR /workspace
+RUN mkdir -p $CONDA_DIR && \
+    mkdir -p $MINICONDA_HOME && \
+    wget https://repo.anaconda.com/miniconda/Miniconda3-py37_23.1.0-1-Linux-x86_64.sh -O $MINICONDA_HOME/miniconda.sh && \
+    bash $MINICONDA_HOME/miniconda.sh -b -u -p $CONDA_DIR && \
+    rm $MINICONDA_HOME/miniconda.sh && \
+    $CONDA_DIR/bin/conda init bash
 
-# Verify installation
-RUN python -c "import tensorflow as tf; print(f'TensorFlow version: {tf.__version__}')" && \
-    python -c "import stardist; print(f'StarDist version: {stardist.__version__}')"
+# Put conda in PATH so we can use conda activate
+ENV PATH=$CONDA_DIR/bin:$PATH
 
-# Default command (can override when running)
-CMD ["python", "--version"]
+# Install Python dependencies via pip
+RUN pip3 install "tensorflow<2" 
+RUN pip3 install "csbdeep[tf1]" 
+RUN pip3 install "stardist[tf1]"
