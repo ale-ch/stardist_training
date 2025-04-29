@@ -1,27 +1,12 @@
 #!/usr/bin/env python
 
-#import numpy as np
-#import os
-#import pandas as pd
-#import sys
-#import matplotlib.pyplot as plt
-#from tifffile import imread
-#from datetime import datetime
-
 import os
 import numpy as np
 from tifffile import imread
 from csbdeep.utils import download_and_extract_zip_file, Path, normalize
 
-#from stardist.matching import matching_dataset
 from stardist import fill_label_holes
 
-# , random_label_cmap, relabel_image_stardist, calculate_extents, gputools_available, _draw_polygons
-#from stardist.models import Config2D, StarDist2D, StarDistData2D
-
-#np.random.seed(42)
-
-#lbl_cmap = random_label_cmap()
 
 
 def download_data(target_dir):
