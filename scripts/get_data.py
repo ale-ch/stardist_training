@@ -17,8 +17,7 @@ def download_data(target_dir):
     )
 
 
-def organize_data(train_data_dir):
-
+def organize_data(train_data_dir, val_prop=0.15):
     masks_dir = os.path.join(train_data_dir, 'masks')
     images_dir = os.path.join(train_data_dir, 'images')
 
@@ -42,7 +41,7 @@ def organize_data(train_data_dir):
 
     rng = np.random.RandomState(42)
     ind = rng.permutation(len(X))
-    n_val = max(1, int(round(0.15 * len(ind))))
+    n_val = max(1, int(round(val_prop * len(ind))))
     ind_train, ind_val = ind[:-n_val], ind[-n_val:]
     X_val, Y_val = [X[i] for i in ind_val]  , [Y[i] for i in ind_val]
     X_trn, Y_trn = [X[i] for i in ind_train], [Y[i] for i in ind_train] 

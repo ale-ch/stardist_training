@@ -4,12 +4,12 @@ import random
 
 def split_dataset(base_dir, train_ratio=0.9):
     images_dir = os.path.join(base_dir, 'images')
-    labels_dir = os.path.join(base_dir, 'labels')
+    labels_dir = os.path.join(base_dir, 'masks')
 
     train_images_dir = os.path.join(base_dir, 'train', 'images')
-    train_labels_dir = os.path.join(base_dir, 'train', 'labels')
+    train_labels_dir = os.path.join(base_dir, 'train', 'masks')
     test_images_dir  = os.path.join(base_dir, 'test', 'images')
-    test_labels_dir  = os.path.join(base_dir, 'test', 'labels')
+    test_labels_dir  = os.path.join(base_dir, 'test', 'masks')
 
     # Create new directories if they exist not
     for dir_path in [train_images_dir, train_labels_dir, test_images_dir, test_labels_dir]:
@@ -43,5 +43,6 @@ def split_dataset(base_dir, train_ratio=0.9):
 
 
 if __name__ == "__main__":
-    dir = '/Users/ieo7086/Documents/tests/file_renaming_test/data'
+    # dir = '/Users/ieo7086/Documents/tests/file_renaming_test/data'
+    dir = '/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/tests/test_imaging_data/data'
     split_dataset(dir)

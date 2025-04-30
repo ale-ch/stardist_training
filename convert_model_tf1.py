@@ -3,7 +3,8 @@ from stardist.models import StarDist2D
 
 if __name__ == '__main__':
 
-    base_dir = '/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/test2'
+    # base_dir = '/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/test2'
+    base_dir = '/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/tests/test_imaging_data/'
 
     models_dir = os.path.join(base_dir, 'models')
 
