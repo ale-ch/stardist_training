@@ -33,8 +33,6 @@ log_file="${model_dir}/training_log.txt"
 start_time=$(date "+%Y-%m-%d %H:%M:%S")
 echo "start_time=$start_time" > "$log_file"
 
-
-
 if [ "$augment" = true ]; then
     # Run training
     singularity exec \
@@ -61,21 +59,6 @@ else
         --val_prop ${val_prop} \
         --val_prop_opt ${val_prop_opt}
 fi
-
-
-
-## Run training
-#singularity exec \
-#    -B /hpcnfs \
-#    ${singularity_imgs_dir}/stardist_training.sif \
-#    python ${scripts_dir}/main.py \
-#        --base_dir ./ \
-#        --model_name ${model_name} \
-#        --epochs ${epochs} \
-#        --steps_per_epoch ${steps_per_epoch} \
-#        --augment \
-#        --val_prop ${val_prop} \
-#        --val_prop_opt ${val_prop_opt}
 
 # Convert trained model to TensorFlow 1 format
 singularity exec \
