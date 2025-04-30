@@ -4,6 +4,7 @@ import os
 import argparse
 import numpy as np
 import pickle
+import matplotlib.pyplot as plt
 from scripts.get_data import download_data, load_data, train_val_split
 from scripts.conf_model import configure_model, instantiate_model
 from stardist.matching import matching_dataset
@@ -94,6 +95,12 @@ def _parse_args():
         default=0.1,
         help='Proportion of data to use for validation.'
     )
+    parser.add_argument(
+        '--val_prop_opt', 
+        type=float, 
+        default=1,
+        help='Proportion of validation data to use for threhsolds optimizations.'
+    )
     
     args = parser.parse_args()
 
@@ -113,6 +120,8 @@ def main():
         train_data_dir = os.path.join(data_dir, 'train')
 
     models_dir = os.path.join(args.base_dir, 'models')
+
+    cur_model_dir = os.path.join(models_dir, args.model_name)  
 
 
     print(f"Loading data from {train_data_dir}")
@@ -145,7 +154,7 @@ def main():
     print("Training complete")
 
     print("Optimizing thresholds")
-    size = int(len(X_val) * 0.5)
+    size = int(len(X_val) * args.val_prop_opt)
     sampled_idx = np.random.randint(0, high=len(X_val), size=size, dtype=int)
     X_val_opt = [X_val[i] for i in sampled_idx]
     Y_val_opt = [Y_val[i] for i in sampled_idx]
@@ -161,9 +170,9 @@ def main():
     Y_val_pred = [model.predict_instances(x, n_tiles=model._guess_n_tiles(x), show_tile_progress=False)[0] for x in X_val]
     print(f"Prediction complete. Length of Y_val_pred: {len(Y_val_pred)}")
 
-    # taus = np.linspace(0.2, 0.9, 8)
+    taus = np.linspace(0.1, 0.9, 9)
 
-    taus = [0.7, 0.8, 0.9]
+    # taus = [0.7, 0.8, 0.9]
 
     print(f"Taus: {taus}")
 
@@ -171,15 +180,37 @@ def main():
     stats = [matching_dataset(Y_val, Y_val_pred, thresh=t, show_progress=False) for t in taus]
 
     # Save the stats to a file
+    
+    fig1, ax1 = plt.subplots(figsize=(7,5))
 
-    stats_file = os.path.join(models_dir, f'stats_{args.model_name}.pkl')
-    print(f"Saving stats to {stats_file}")
-    # save_pickle(stats, stats_file)
-    print(f"Saved stats to {stats_file}")
+    # First plot: metrics
+    fig1_outname = os.path.join(cur_model_dir, f'{args.model_name}_metrics_plot.png')
+    for m in ('precision', 'recall', 'accuracy', 'f1', 'mean_true_score'):
+        ax1.plot(taus, [s._asdict()[m] for s in stats], '.-', lw=2, label=m)
+    ax1.set_xlabel(r'IoU threshold $\tau$')
+    ax1.set_ylabel('Metric value')
+    ax1.grid()
+    ax1.legend()
+    fig1.savefig(fig1_outname)  # or .pdf, .svg, etc.
+    plt.close(fig1)
 
-    # print(stats[taus.index(0.8)])
+    print(f"Saved metrics plot figure to {fig1_outname}")
 
-    # stats = [stats[taus.index(t)] for t in taus]
+
+    # Second plot: counts
+    fig2_outname = os.path.join(cur_model_dir, f'{args.model_name}_counts_plot.png')
+    fig2, ax2 = plt.subplots(figsize=(7,5))
+    for m in ('fp', 'tp', 'fn'):
+        ax2.plot(taus, [s._asdict()[m] for s in stats], '.-', lw=2, label=m)
+    ax2.set_xlabel(r'IoU threshold $\tau$')
+    ax2.set_ylabel('Number #')
+    ax2.grid()
+    ax2.legend()
+    fig2.savefig(fig2_outname)
+    plt.close(fig2)
+
+    print(f"Saved counts plot figure to {fig2_outname}")
+
 
 
 

@@ -6,6 +6,7 @@ model_name=stardist
 epochs=5
 steps_per_epoch=5
 val_prop=0.1
+val_prop_opt=1
 
 # Run training
 singularity exec \
@@ -17,7 +18,8 @@ singularity exec \
         --epochs ${epochs} \
         --steps_per_epoch ${steps_per_epoch} \
         --augment \
-        --val_prop ${val_prop}
+        --val_prop ${val_prop} \
+        --val_prop_opt ${val_prop_opt}
 
 # Convert trained model to TensorFlow 1 format
 singularity exec \

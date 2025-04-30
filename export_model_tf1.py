@@ -31,13 +31,14 @@ if __name__ == '__main__':
     model_name = args.model_name
 
     models_dir = os.path.join(base_dir, 'models')
+    cur_model_dir = os.path.join(models_dir, model_name)
 
     print("Loading model")
     model = StarDist2D(None, name=model_name, basedir=models_dir)
     print("Loaded model")
 
-    tf_model_outname = f"{model_name}_tf.zip"
-    tf_model_path = os.path.join(models_dir, tf_model_outname)
+    tf_model_outname = f"TF_{model_name}.zip"
+    tf_model_path = os.path.join(cur_model_dir, tf_model_outname)
 
     print(f"Exporting model to {tf_model_path}")
     model.export_TF(fname=tf_model_path)
