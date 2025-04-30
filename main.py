@@ -123,7 +123,6 @@ def main():
 
     cur_model_dir = os.path.join(models_dir, args.model_name)  
 
-
     print(f"Loading data from {train_data_dir}")
     X, Y = load_data(train_data_dir)
 
@@ -179,12 +178,12 @@ def main():
     print(f"Matching dataset")
     stats = [matching_dataset(Y_val, Y_val_pred, thresh=t, show_progress=False) for t in taus]
 
-    # Save the stats to a file
-    
-    fig1, ax1 = plt.subplots(figsize=(7,5))
 
+    # Saving quality control plots
+    os.makedirs(os.path.join(cur_model_dir, 'quality_control'), exist_ok=True)
+    fig1, ax1 = plt.subplots(figsize=(7,5))
     # First plot: metrics
-    fig1_outname = os.path.join(cur_model_dir, f'{args.model_name}_metrics_plot.png')
+    fig1_outname = os.path.join(cur_model_dir, 'quality_control', f'{args.model_name}_metrics_plot.png')
     for m in ('precision', 'recall', 'accuracy', 'f1', 'mean_true_score'):
         ax1.plot(taus, [s._asdict()[m] for s in stats], '.-', lw=2, label=m)
     ax1.set_xlabel(r'IoU threshold $\tau$')
@@ -198,7 +197,7 @@ def main():
 
 
     # Second plot: counts
-    fig2_outname = os.path.join(cur_model_dir, f'{args.model_name}_counts_plot.png')
+    fig2_outname = os.path.join(cur_model_dir, 'quality_control', f'{args.model_name}_counts_plot.png')
     fig2, ax2 = plt.subplots(figsize=(7,5))
     for m in ('fp', 'tp', 'fn'):
         ax2.plot(taus, [s._asdict()[m] for s in stats], '.-', lw=2, label=m)
