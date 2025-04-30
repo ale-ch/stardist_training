@@ -17,7 +17,7 @@ def download_data(target_dir):
     )
 
 
-def organize_data(train_data_dir, val_prop=0.15):
+def load_data(train_data_dir):
     masks_dir = os.path.join(train_data_dir, 'masks')
     images_dir = os.path.join(train_data_dir, 'images')
 
@@ -31,6 +31,10 @@ def organize_data(train_data_dir, val_prop=0.15):
     print(f"X LEN: {len(X)}")
     print(f"Y LEN: {len(Y)}")
 
+    return X, Y
+
+
+def train_val_split(X, Y, val_prop=0.15):
     n_channel = 1 if X[0].ndim == 2 else X[0].shape[-1]
 
     axis_norm = (0,1)   # normalize channels independently

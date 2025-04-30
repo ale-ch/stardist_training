@@ -1,5 +1,6 @@
 import tifffile as tiff
 import pickle
+import np
 
 from csbdeep.utils import normalize
 from stardist.models import StarDist2D
@@ -32,7 +33,7 @@ if __name__ == '__main__':
 
     Y_val_pred = [model.predict_instances(x, n_tiles=model._guess_n_tiles(x), show_tile_progress=False)[0] for x in X_val]
 
-    taus = [0.7, 0.8, 0.9]
+    taus = np.linspace(0.2, 0.9, 8)
 
     stats = [matching_dataset(Y_val, Y_val_pred, thresh=t, show_progress=False) for t in taus]
 
