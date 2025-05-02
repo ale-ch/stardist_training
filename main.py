@@ -94,9 +94,9 @@ def _parse_args():
 
 
 def main():
-    np.random.seed(args.random_seed)
-
     args = _parse_args()
+
+    np.random.seed(args.random_seed)
 
     run = wandb.init(
         project="stardist-training",

@@ -34,6 +34,7 @@ steps_per_epoch=$steps_per_epoch
 augment=${augment}
 val_prop=$val_prop
 val_prop_opt=$val_prop_opt
+random_seed=$random_seed
 EOF
 
 
