@@ -29,6 +29,8 @@ EOF
 # File to write times to
 log_file="${model_dir}/training_log.txt"
 
+wandb login
+
 # Record start time
 start_time=$(date "+%Y-%m-%d %H:%M:%S")
 echo "start_time=$start_time" > "$log_file"
