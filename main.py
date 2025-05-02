@@ -83,7 +83,6 @@ def main():
         train_data_dir = os.path.join(data_dir, 'train')
 
     models_dir = os.path.join(args.base_dir, 'models')
-    cur_model_dir = os.path.join(models_dir, args.model_name)  
 
     print(f"Loading data from {train_data_dir}")
     X, Y = load_data(train_data_dir)
@@ -137,38 +136,29 @@ def main():
     print(f"Matching dataset")
     stats = [matching_dataset(Y_val, Y_val_pred, thresh=t, show_progress=False) for t in taus]
 
-    os.makedirs(os.path.join(cur_model_dir, 'quality_control'), exist_ok=True)
-
     # Plot metrics
     fig1, ax1 = plt.subplots(figsize=(7,5))
-    fig1_outname = os.path.join(cur_model_dir, 'quality_control', f'{args.model_name}_metrics_plot.png')
     for m in ('precision', 'recall', 'accuracy', 'f1', 'mean_true_score'):
         ax1.plot(taus, [s._asdict()[m] for s in stats], '.-', lw=2, label=m)
     ax1.set_xlabel(r'IoU threshold $\tau$')
     ax1.set_ylabel('Metric value')
     ax1.grid()
     ax1.legend()
-    fig1.savefig(fig1_outname)
     plt.close(fig1)
-    print(f"Saved metrics plot figure to {fig1_outname}")
 
     # Plot counts
     fig2, ax2 = plt.subplots(figsize=(7,5))
-    fig2_outname = os.path.join(cur_model_dir, 'quality_control', f'{args.model_name}_counts_plot.png')
     for m in ('fp', 'tp', 'fn'):
         ax2.plot(taus, [s._asdict()[m] for s in stats], '.-', lw=2, label=m)
     ax2.set_xlabel(r'IoU threshold $\tau$')
     ax2.set_ylabel('Number #')
     ax2.grid()
     ax2.legend()
-    fig2.savefig(fig2_outname)
     plt.close(fig2)
-    print(f"Saved counts plot figure to {fig2_outname}")
 
-    # Log plots to Wandb
     wandb.log({
-        "metrics_plot": wandb.Image(fig1_outname),
-        "counts_plot": wandb.Image(fig2_outname)
+        "metrics_plot": wandb.Image(fig1),
+        "counts_plot": wandb.Image(fig2)
     })
 
     wandb.finish()
