@@ -1,7 +1,8 @@
 singularity_imgs_dir=/hpcnfs/scratch/DIMA/chiodin/singularity_images
 scripts_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/stardist_training
 
-model_name=stardist_e80_spe25_vp0.1_vpp1
+# model_name=stardist_e80_spe25_vp0.1_vpp1
+model_name=stardist_e200_spe50_vp0.1_vpp1
 base_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/runs/20250430/models
 file=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/runs/20250430/data/test/images/dapi_28.tif
 outdir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/predictions
