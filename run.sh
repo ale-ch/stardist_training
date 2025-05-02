@@ -72,24 +72,6 @@ fi
 end_time=$(date "+%Y-%m-%d %H:%M:%S")
 echo "end_time=$end_time" >> "$log_file"
 
-singularity exec \
-    -B /hpcnfs \
-    ${singularity_imgs_dir}/stardist_training.sif \
-    python ${scripts_dir}/scripts/predict.py \
-        --model_name ${model_name} \
-        --models_dir ${models_dir} \
-        --test_imgs_dir ${test_imgs_dir} \
-        --outdir ${preds_dir}
-
-
-singularity exec \
-    -B /hpcnfs \
-    ${singularity_imgs_dir}/stardist_training.sif \
-    python ${scripts_dir}/scripts/quality_control.py \
-        --preds_dir ./predictions/${model_name} \
-        --gt_dir ${gt_dir} \
-        --outdir ./quality_control/${model_name}
-
 
 
 # Convert trained model to TensorFlow 1 format

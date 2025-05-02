@@ -5,7 +5,9 @@ import argparse
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
+import tifffile as tiff
 import wandb  # Added for Weights & Biases logging
+from csbdeep.utils import normalize
 
 from scripts.get_data import download_data, load_data, train_val_split
 from scripts.conf_model import configure_model, instantiate_model
@@ -45,6 +47,40 @@ def augmenter(img, mask):
     return img, mask
 
 
+def quality_control(model, test_imgs_dir, test_gt_dir, qc_outdir):
+    for img_file, mask_file in zip(os.listdir(test_imgs_dir), os.listdir(test_gt_dir)):
+        img_file = os.path.join(test_imgs_dir, img_file)  
+        mask_file = os.path.join(test_gt_dir, mask_file)
+
+        img = tiff.imread(img_file)
+        mask = tiff.imread(mask_file)
+
+        n_channel = 1 if img.ndim == 2 else img.shape[-1]
+        axis_norm = (0, 1)
+
+        if n_channel > 1:
+            print("Normalizing image channels %s." % ('jointly' if axis_norm is None or 2 in axis_norm else 'independently'))
+
+        img = normalize(img, 1, 99.8, axis=axis_norm)
+
+        pred, details = model.predict_instances(img, verbose=True)
+
+        filename = f"{os.path.basename(img_file).split('.')[0]}.jpg"
+        output_path = os.path.join(qc_outdir, filename)
+        print(f"Processing {img_file} and {mask_file}...")
+        mask = tiff.imread(mask_file)
+        pred = tiff.imread(img_file)
+        
+        plt.figure(figsize=(10, 10))
+        plt.imshow(mask > 0, alpha=0.3, cmap='Blues')
+        plt.imshow(pred > 0, cmap='Reds', alpha=0.2)
+        print(f"Saving plot to {output_path}...")
+        plt.savefig(output_path)
+        plt.close()
+        print(f"Saved plot to {output_path}.")
+
+
+
 def _parse_args():
     parser = argparse.ArgumentParser(description="Train a Stardist model with specified options.")
     parser.add_argument('--demo', action='store_true', help='Use demo data (download and train on test2 dataset).')
@@ -81,8 +117,12 @@ def main():
     else:
         data_dir = os.path.join(args.base_dir, 'data')
         train_data_dir = os.path.join(data_dir, 'train')
+        test_imgs_dir = os.path.join(data_dir, 'test', 'images')
+        test_gt_dir = os.path.join(data_dir, 'test', 'masks')
+        
 
     models_dir = os.path.join(args.base_dir, 'models')
+    
 
     print(f"Loading data from {train_data_dir}")
     X, Y = load_data(train_data_dir)
@@ -90,6 +130,9 @@ def main():
 
     conf = configure_model()
     model = instantiate_model(conf, models_dir, args.model_name)
+
+    qc_outdir = os.path.join(args.base_dir, 'models', args.model_name, 'quality_control')
+    os.makedirs(qc_outdir, exist_ok=True)
 
     print("Training model")
     if args.augment:
@@ -162,6 +205,9 @@ def main():
     })
 
     wandb.finish()
+
+    quality_control(model, test_imgs_dir, test_gt_dir, qc_outdir)
+
 
 
 if __name__ == '__main__':
