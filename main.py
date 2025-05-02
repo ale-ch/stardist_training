@@ -6,14 +6,12 @@ import numpy as np
 import pickle
 import matplotlib.pyplot as plt
 import tifffile as tiff
-import wandb  # Added for Weights & Biases logging
+import wandb 
+
 from csbdeep.utils import normalize
-
-from scripts.get_data import download_data, load_data, train_val_split
-from scripts.conf_model import configure_model, instantiate_model
+from utils.get_data import download_data, load_data, train_val_split
+from utils.conf_model import configure_model, instantiate_model
 from stardist.matching import matching_dataset
-
-np.random.seed(42)
 
 
 def save_pickle(object, path):
@@ -91,10 +89,13 @@ def _parse_args():
     parser.add_argument('--augment', action='store_true', help='Augment data during training.')
     parser.add_argument('--val_prop', type=float, default=0.1, help='Proportion of data to use for validation.')
     parser.add_argument('--val_prop_opt', type=float, default=1, help='Proportion of validation data to use for thresholds optimization.')
+    parser.add_argument('--random_seed', type=int, default=42, help='Random seed for reproducibility.')
     return parser.parse_args()
 
 
 def main():
+    np.random.seed(args.random_seed)
+
     args = _parse_args()
 
     run = wandb.init(
@@ -142,7 +143,8 @@ def main():
             validation_data=(X_val, Y_val),
             epochs=args.epochs,
             steps_per_epoch=args.steps_per_epoch,
-            augmenter=augmenter
+            augmenter=augmenter,
+            seed=args.random_seed,
         )
     else:
         history = model.train(
@@ -150,7 +152,8 @@ def main():
             Y_trn,
             validation_data=(X_val, Y_val),
             epochs=args.epochs,
-            steps_per_epoch=args.steps_per_epoch
+            steps_per_epoch=args.steps_per_epoch,
+            seed=args.random_seed,
         )
 
     # Wandb log training metrics

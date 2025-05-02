@@ -1,14 +1,19 @@
-wandb login
-
 singularity_imgs_dir=/hpcnfs/scratch/DIMA/chiodin/singularity_images
-scripts_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/stardist_training
 
+
+singularity exec \
+    -B /hpcnfs \
+    ${singularity_imgs_dir}/stardist_training.sif \
+    wandb login
+
+
+scripts_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/stardist_training
 epochs=5
 steps_per_epoch=5
 val_prop=0.1
 val_prop_opt=1
 augment=true
-
+random_seed=42
 
 model_name=stardist_e${epochs}_spe${steps_per_epoch}_vp${val_prop}_vpp${val_prop_opt}
 models_dir=./models
@@ -52,7 +57,8 @@ if [ "$augment" = true ]; then
         --steps_per_epoch ${steps_per_epoch} \
         --augment \
         --val_prop ${val_prop} \
-        --val_prop_opt ${val_prop_opt}
+        --val_prop_opt ${val_prop_opt} \
+        --random_seed ${random_seed}
 else
     # Run training
     singularity exec \
@@ -65,6 +71,7 @@ else
         --steps_per_epoch ${steps_per_epoch} \
         --val_prop ${val_prop} \
         --val_prop_opt ${val_prop_opt}
+        --random_seed ${random_seed}
 fi
 
 
