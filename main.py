@@ -53,13 +53,7 @@ def quality_control(model, test_imgs_dir, test_gt_dir, qc_outdir):
         img = tiff.imread(img_file)
         mask = tiff.imread(mask_file)
 
-        n_channel = 1 if img.ndim == 2 else img.shape[-1]
-        axis_norm = (0, 1)
-
-        if n_channel > 1:
-            print("Normalizing image channels %s." % ('jointly' if axis_norm is None or 2 in axis_norm else 'independently'))
-
-        img = normalize(img, 1, 99.8, axis=axis_norm)
+        img = normalize(img, 1, 99.8, axis=(0, 1))
 
         pred, details = model.predict_instances(img, verbose=True)
 
@@ -97,6 +91,7 @@ def main():
     args = _parse_args()
 
     np.random.seed(args.random_seed)
+    np.random.RandomState(args.random_seed)
 
     run = wandb.init(
         project="stardist-training",
@@ -127,10 +122,10 @@ def main():
 
     print(f"Loading data from {train_data_dir}")
     X, Y = load_data(train_data_dir)
-    (X_trn, Y_trn), (X_val, Y_val) = train_val_split(X, Y, val_prop=args.val_prop)
+    (X_trn, Y_trn), (X_val, Y_val) = train_val_split(X, Y, val_prop=args.val_prop, seed=args.random_seed)
 
     conf = configure_model()
-    model = instantiate_model(conf, models_dir, args.model_name)
+    model = instantiate_model(conf, models_dir, args.model_name, pretrained=True)
 
     qc_outdir = os.path.join(args.base_dir, 'models', args.model_name, 'quality_control')
     os.makedirs(qc_outdir, exist_ok=True)
@@ -201,6 +196,7 @@ def main():
     ax2.grid()
     ax2.legend()
     plt.close(fig2)
+
 
     wandb.log({
         "metrics_plot": wandb.Image(fig1),

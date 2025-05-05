@@ -1,8 +1,9 @@
 import os
 import shutil
 import random
+import argparse
 
-def split_dataset(base_dir, train_ratio=0.9):
+def split_dataset(base_dir, outdir, train_ratio=0.9):
     images_dir = os.path.join(base_dir, 'images')
     labels_dir = os.path.join(base_dir, 'masks')
 
@@ -44,5 +45,13 @@ def split_dataset(base_dir, train_ratio=0.9):
 
 if __name__ == "__main__":
     # dir = '/Users/ieo7086/Documents/tests/file_renaming_test/data'
-    dir = '/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/tests/test_imaging_data/data'
-    split_dataset(dir)
+    parser = argparse.ArgumentParser(description="Split images and labels into train and test.")
+    parser.add_argument('--data_dir', required=True, help='Directory containing images and labels')
+    parser.add_argument('--output_dir', required=True, help='Directory to save the split dataset')
+    parser.add_argument('--seed', type=int, default=42, help='Random seed for reproducibility')
+
+    args = parser.parse_args()
+
+    random.seed(args.seed)
+
+    split_dataset(args.data_dir, args.output_dir)

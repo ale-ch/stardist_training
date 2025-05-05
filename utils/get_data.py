@@ -34,7 +34,7 @@ def load_data(train_data_dir):
     return X, Y
 
 
-def train_val_split(X, Y, val_prop=0.15):
+def train_val_split(X, Y, val_prop=0.15, seed=42):
     n_channel = 1 if X[0].ndim == 2 else X[0].shape[-1]
 
     axis_norm = (0,1)   # normalize channels independently
@@ -43,7 +43,7 @@ def train_val_split(X, Y, val_prop=0.15):
     X = [normalize(x,1,99.8,axis=axis_norm) for x in X]
     Y = [fill_label_holes(y) for y in Y]
 
-    rng = np.random.RandomState(42)
+    rng = np.random.RandomState(seed)
     ind = rng.permutation(len(X))
     n_val = max(1, int(round(val_prop * len(ind))))
     ind_train, ind_val = ind[:-n_val], ind[-n_val:]

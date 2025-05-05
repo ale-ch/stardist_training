@@ -14,8 +14,6 @@ def main():
     preds_dir = args.preds_dir
     gt_dir = args.gt_dir
     outdir = args.outdir
-    
-    os.makedirs(outdir, exist_ok=True)
 
     preds_files = [os.path.join(preds_dir, file) for file in os.listdir(preds_dir)]
     masks_files = [os.path.join(gt_dir, file) for file in os.listdir(gt_dir)]
