@@ -39,7 +39,7 @@ def random_intensity_change(img):
     img = img * np.random.uniform(0.6, 2)
     return img
 
-def augmenter(img, mask):
+def default_augmenter(img, mask):
     img, mask = random_fliprot(img, mask)
     img = random_intensity_change(img)
     return img, mask
@@ -81,6 +81,7 @@ def _parse_args():
     parser.add_argument('--epochs', type=int, default=5, help='Number of epochs to train the model.')
     parser.add_argument('--steps_per_epoch', type=int, default=4, help='Number of steps per epoch during training.')
     parser.add_argument('--augment', action='store_true', help='Augment data during training.')
+    parser.add_argument('--learning_rate', type=float, default=0.0001, help='Learning rate for the model.')
     parser.add_argument('--val_prop', type=float, default=0.1, help='Proportion of data to use for validation.')
     parser.add_argument('--val_prop_opt', type=float, default=1, help='Proportion of validation data to use for thresholds optimization.')
     parser.add_argument('--random_seed', type=int, default=42, help='Random seed for reproducibility.')
@@ -125,31 +126,24 @@ def main():
     (X_trn, Y_trn), (X_val, Y_val) = train_val_split(X, Y, val_prop=args.val_prop, seed=args.random_seed)
 
     conf = configure_model()
-    model = instantiate_model(conf, models_dir, args.model_name, pretrained=True)
+    model = instantiate_model(conf, models_dir, args.model_name, pretrained=True, learning_rate=args.learning_rate)
 
     qc_outdir = os.path.join(args.base_dir, 'models', args.model_name, 'quality_control')
     os.makedirs(qc_outdir, exist_ok=True)
 
     print("Training model")
-    if args.augment:
-        history = model.train(
-            X_trn, 
-            Y_trn,
-            validation_data=(X_val, Y_val),
-            epochs=args.epochs,
-            steps_per_epoch=args.steps_per_epoch,
-            augmenter=augmenter,
-            seed=args.random_seed,
-        )
-    else:
-        history = model.train(
-            X_trn, 
-            Y_trn,
-            validation_data=(X_val, Y_val),
-            epochs=args.epochs,
-            steps_per_epoch=args.steps_per_epoch,
-            seed=args.random_seed,
-        )
+
+    augmenter = default_augmenter if args.augment else None
+    
+    history = model.train(
+        X_trn, 
+        Y_trn,
+        validation_data=(X_val, Y_val),
+        epochs=args.epochs,
+        steps_per_epoch=args.steps_per_epoch,
+        augmenter=augmenter,
+        seed=args.random_seed,
+    )
 
     # Wandb log training metrics
     for epoch in range(args.epochs):

@@ -33,11 +33,10 @@ def instantiate_model(conf, basedir, model_name, pretrained='2D_versatile_fluo')
     return model
 
 
-def instantiate_model(conf, basedir, model_name, pretrained=True):
+def instantiate_model(conf, basedir, model_name, learning_rate: float = None, pretrained=True, ):
     if not pretrained:
         model = StarDist2D(conf, name=model_name, basedir=basedir)
     else:
-
         cur_model_dir = os.path.join(basedir, model_name)
 
         model_pretrained = StarDist2D.from_pretrained('2D_versatile_fluo')
@@ -45,6 +44,9 @@ def instantiate_model(conf, basedir, model_name, pretrained=True):
 
         # create new model from folder (loading the  pretrained weights)
         model = StarDist2D(None, name=model_name, basedir=basedir)
+    
+    if learning_rate is not None:
+        model.config.train_learning_rate = learning_rate
 
     print("Instantiated model")
 

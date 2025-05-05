@@ -4,17 +4,19 @@
 singularity_imgs_dir=/hpcnfs/scratch/DIMA/chiodin/singularity_images
 scripts_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/stardist_training
 
-model_name=stardist_e100_spe50_vp0.1_vpp1
+model_name=stardist_e80_spe50_vp0.1_vpp1
 
-gt_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/runs/20250502/data/test/masks
+run_name=20250505
 
-test_imgs_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/runs/20250502/data/test/images
+gt_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/runs/${run_name}/data/test/masks
 
-preds_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/runs/20250502/predictions/${model_name}
+test_imgs_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/runs/${run_name}/data/test/images
 
-models_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/runs/20250502/models
+preds_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/runs/${run_name}/predictions/${model_name}
 
-qc_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/runs/20250502/quality_control/${model_name}
+models_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/runs/${run_name}/models
+
+qc_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/runs/${run_name}/quality_control/${model_name}
 
 
 mkdir -p ${preds_dir}
