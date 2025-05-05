@@ -54,7 +54,7 @@ def instantiate_model(conf, basedir, model_name, learning_rate: float = None, pr
     return model
 
 
-#### Example ####
+#### Example ###
 
 # https://forum.image.sc/t/how-to-continue-training/73482/5
 # import numpy as np

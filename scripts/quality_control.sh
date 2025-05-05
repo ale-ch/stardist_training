@@ -4,7 +4,9 @@
 singularity_imgs_dir=/hpcnfs/scratch/DIMA/chiodin/singularity_images
 scripts_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/stardist_training
 
-model_name=stardist_e80_spe50_vp0.1_vpp1
+#model_name=stardist_e80_spe50_vp0.1_vpp1
+
+model_name=stardist_e25_spe50_lr0.0001_vp0.1_vpp1
 
 run_name=20250505
 
