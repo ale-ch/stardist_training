@@ -17,21 +17,41 @@ def download_data(target_dir):
     )
 
 
-def load_data(train_data_dir):
-    masks_dir = os.path.join(train_data_dir, 'masks')
-    images_dir = os.path.join(train_data_dir, 'images')
+def load_data(data_dir):
+    masks_dir = os.path.join(data_dir, 'masks')
+    images_dir = os.path.join(data_dir, 'images')
 
-    fX = sorted(Path(images_dir).glob('*.tif'))
-    fY = sorted(Path(masks_dir).glob('*.tif'))
-    print(f"found {len(fX)} training images and {len(fY)} training masks")
+    images_files = sorted([os.path.join(images_dir, f) for f in os.listdir(images_dir)])
+    masks_files = sorted([os.path.join(masks_dir, f) for f in os.listdir(masks_dir)])
 
-    X = list(map(imread,map(str,fX)))
-    Y = list(map(imread,map(str,fY)))
+    X = []
+    Y = []
+    files = []
+    for image_file, mask_file in zip(images_files, masks_files):
+        image = imread(image_file)
+        mask = imread(mask_file)
 
-    print(f"X LEN: {len(X)}")
-    print(f"Y LEN: {len(Y)}")
+        # Append the image and mask to the lists
+        X.append(image)
+        Y.append(mask)
+        files.append(os.path.basename(image_file))
 
-    return X, Y
+    return X, Y, files
+
+
+def train_test_split(X, Y, filenames, val_prop=0.1, seed=42):
+    rng = np.random.RandomState(seed)
+    ind = rng.permutation(len(X))
+    n_test = max(1, int(round(val_prop * len(ind))))
+    ind_train, ind_test = ind[:-n_test], ind[-n_test:]
+    X_test, Y_test = [X[i] for i in ind_test]  , [Y[i] for i in ind_test]
+    X_train, Y_train = [X[i] for i in ind_train], [Y[i] for i in ind_train] 
+    filenames_train, filenames_test = [filenames[i] for i in ind_train], [filenames[i] for i in ind_test]
+    print('number of images: %3d' % len(X))
+    print('- training:       %3d' % len(X_train))
+    print('- test:     %3d' % len(X_test))
+
+    return (X_train, Y_train), (X_test, Y_test), (filenames_train, filenames_test)
 
 
 def train_val_split(X, Y, val_prop=0.15, seed=42):
@@ -54,3 +74,7 @@ def train_val_split(X, Y, val_prop=0.15, seed=42):
     print('- validation:     %3d' % len(X_val))
 
     return (X_trn, Y_trn), (X_val, Y_val)
+
+
+
+

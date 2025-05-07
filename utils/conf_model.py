@@ -21,25 +21,25 @@ def configure_model():
 
     # model = StarDist2D(conf, name='stardist_v3', basedir='models/instance_segmentation_2D_akoya')
 
-def instantiate_model(conf, basedir, model_name, pretrained='2D_versatile_fluo'):
+# def instantiate_model(conf, basedir, model_name, pretrained='2D_versatile_fluo'):
+# 
+#     if pretrained is None:
+#         model = StarDist2D(conf, name=model_name, basedir=basedir)
+#     else:
+#         model = StarDist2D.from_pretrained(pretrained)
+# 
+#     print("Instantiated model") 
+# 
+#     return model
 
-    if pretrained is None:
-        model = StarDist2D(conf, name=model_name, basedir=basedir)
-    else:
-        model = StarDist2D.from_pretrained(pretrained)
 
-    print("Instantiated model") 
-
-    return model
-
-
-def instantiate_model(conf, basedir, model_name, learning_rate: float = None, pretrained=True, ):
-    if not pretrained:
+def instantiate_model(basedir, model_name, conf=None, learning_rate: float = None, pretrained=None):
+    if pretrained is not None:
         model = StarDist2D(conf, name=model_name, basedir=basedir)
     else:
         cur_model_dir = os.path.join(basedir, model_name)
 
-        model_pretrained = StarDist2D.from_pretrained('2D_versatile_fluo')
+        model_pretrained = StarDist2D.from_pretrained(pretrained)
         shutil.copytree(model_pretrained.logdir, cur_model_dir, dirs_exist_ok=True)
 
         # create new model from folder (loading the  pretrained weights)
