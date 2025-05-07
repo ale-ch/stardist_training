@@ -6,12 +6,14 @@ import numpy as np
 import pickle
 import matplotlib.pyplot as plt
 import tifffile as tiff
-from cellpose.utils import masks_to_outlines
-from skimage.transform import rescale
+import json
 import wandb 
 
+from cellpose.utils import masks_to_outlines
+from skimage.transform import rescale
+from stardist import fill_label_holes
 from csbdeep.utils import normalize
-from utils.get_data import download_data, load_data, train_val_split, train_test_split
+from utils.get_data import download_data, load_data, train_test_val_split
 from utils.conf_model import configure_model, instantiate_model
 from stardist.matching import matching_dataset
 
@@ -94,8 +96,6 @@ def plot_metrics(Y_val, Y_val_pred, taus):
 
 
 
-import json
-
 def save_config_to_json(model_name, epochs, steps_per_epoch, learning_rate, augment,
                         val_prop, val_prop_opt, random_seed, files_train, files_test,
                         file_path="config.json"):
@@ -116,11 +116,10 @@ def save_config_to_json(model_name, epochs, steps_per_epoch, learning_rate, augm
         json.dump(config, f, indent=4)
 
 
+def quality_control(model, X_test, Y_test, files_test, qc_outdir):
+    for img, mask, file in zip(X_test, Y_test, files_test):
 
-
-def quality_control(model, X_test, Y_test, filenames_test, qc_outdir):
-    for img, mask, filename in zip(os.listdir(X_test), os.listdir(Y_test), filenames_test):
-
+        filename = os.path.basename(file)
         output_path = os.path.join(qc_outdir, filename)
 
         img = normalize(img, 1, 99.8, axis=(0, 1))
@@ -133,12 +132,14 @@ def quality_control(model, X_test, Y_test, filenames_test, qc_outdir):
         outlines_pred = masks_to_outlines(pred)
         outlines_pred = np.array(outlines_pred, dtype="float32")
 
-        output_array = np.stack([X_test, Y_test, pred, outlines_test, outlines_pred], axis=0).astype("float32")
+        output_array = np.stack([img, mask, pred, outlines_test, outlines_pred], axis=0).astype("float32")
         output_array = normalize_image(output_array)
         output_array = np.array([
-            rescale(output_array[0], scale=0.5, anti_aliasing=True), 
-            rescale(output_array[1], scale=0.5, anti_aliasing=False),
-            rescale(output_array[2], scale=0.5, anti_aliasing=False)
+            rescale(output_array[0], scale=1, anti_aliasing=True), 
+            rescale(output_array[1], scale=1, anti_aliasing=False),
+            rescale(output_array[2], scale=1, anti_aliasing=False),
+            rescale(output_array[3], scale=1, anti_aliasing=False),
+            rescale(output_array[4], scale=1, anti_aliasing=False),
         ])
         output_array = rescale_to_uint8(output_array)
 
@@ -152,10 +153,27 @@ def quality_control(model, X_test, Y_test, filenames_test, qc_outdir):
         )
 
 
+def preprocess_data(X, Y):
+    axis_norm = (0,1)   # normalize channels independently
+
+    X = [normalize(x,1,99.8,axis=axis_norm) for x in X]
+    Y = [fill_label_holes(y) for y in Y]
+
+    return X, Y
+
+
 def _parse_args():
     parser = argparse.ArgumentParser(description="Train a Stardist model with specified options.")
     parser.add_argument('--demo', action='store_true', help='Use demo data (download and train on test2 dataset).')
-    parser.add_argument('--base_dir', type=str, default='/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/tests/test_imaging_data/', help='Base directory for data and models.')
+    parser.add_argument('--base_dir', 
+                        type=str, 
+                        default='/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/tests/test_imaging_data/', 
+                        help='Base directory for the pipeline.'
+    )
+    parser.add_argument('--data_dir', 
+                        type=str, 
+                        help="Directory containing the data. The folder should contain subdirectories 'images' and 'masks'."
+    )
     parser.add_argument('--pretrained', type=str, default='2D_versatile_fluo', help='Name of pretrained model to use.')
     parser.add_argument('--model_name', type=str, default='stardist', help='Name of the model to use/save.')
     parser.add_argument('--epochs', type=int, default=5, help='Number of epochs to train the model.')
@@ -189,39 +207,37 @@ def main():
         }
     )
 
+    data_dir = os.path.join(args.base_dir, 'data')
+    
     if args.demo:
-        data_dir = os.path.join(args.base_dir, 'data')
-        # train_data_dir = os.path.join(data_dir, 'dsb2018', 'train')
-        download_data(data_dir)
+        download_data(args.data_dir)
+        # downloaded data goes to: data_dir/dsb2018/train and data_dir/dsb2018/test
     else:
-        data_dir = os.path.join(args.base_dir, 'data')
-        # train_data_dir = os.path.join(data_dir, 'train')
+        data_dir = args.data_dir
         
 
-    models_dir = os.path.join(args.base_dir, 'models')
+    seed_dir = os.path.join(args.base_dir, 'runs', str(args.random_seed))
+    models_dir = os.path.join(seed_dir, 'models')
     cur_model_dir = os.path.join(models_dir, args.model_name)
     qc_outdir = os.path.join(cur_model_dir, 'quality_control')
 
-    os.makedirs(cur_model_dir, exist_ok=True)
+    os.makedirs(seed_dir, exist_ok=True)
+    os.makedirs(models_dir, exist_ok=True)
+    # os.makedirs(cur_model_dir, exist_ok=True)
     os.makedirs(qc_outdir, exist_ok=True)
     
 
     print(f"Loading data from {data_dir}")
     X, Y, files = load_data(data_dir)
 
-    (X_trn, Y_trn), (X_test, Y_test), (files_train, files_test) = train_test_split(
+    X, Y = preprocess_data(X, Y)
+
+    (X_train, Y_train), (X_test, Y_test), (X_val, Y_val), (files_train, files_test) = train_test_val_split(
         X, 
         Y,
         files,
-        val_prop=args.val_prop, 
-        seed=args.random_seed
-    )
-
-
-    (X_trn, Y_trn), (X_val, Y_val) = train_val_split(
-        X, 
-        Y, 
-        val_prop=args.val_prop, 
+        test_prop=args.test_prop, 
+        val_prop=args.val_prop,
         seed=args.random_seed
     )
 
@@ -242,19 +258,19 @@ def main():
     augmenter = default_augmenter if args.augment else None
 
     model = instantiate_model(
-        conf, 
-        models_dir, 
+        models_dir,
         args.model_name, 
-        pretrained=args.pretrained, 
-        learning_rate=args.learning_rate,
+        conf, 
+        args.learning_rate, 
+        args.pretrained
     )
 
 
     print("Training model")
 
     history = model.train(
-        X_trn, 
-        Y_trn,
+        X_train, 
+        Y_train,
         validation_data=(X_val, Y_val),
         epochs=args.epochs,
         steps_per_epoch=args.steps_per_epoch,

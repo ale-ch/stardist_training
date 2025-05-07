@@ -33,20 +33,30 @@ def configure_model():
 #     return model
 
 
-def instantiate_model(basedir, model_name, conf=None, learning_rate: float = None, pretrained=None):
-    if pretrained is not None:
-        model = StarDist2D(conf, name=model_name, basedir=basedir)
+def instantiate_model(models_dir, model_name, conf=None, learning_rate: float = None, pretrained=None):
+    print(f"instantiate_model: PRETRAINED: {pretrained}")
+    cur_model_dir = os.path.join(models_dir, model_name)
+
+    if pretrained is None:
+        print("instantiate_model: Instantiate model from scratch")
+        model = StarDist2D(conf, name=model_name, basedir=models_dir)
+
     else:
-        cur_model_dir = os.path.join(basedir, model_name)
+        print("instantiate_model: Instantiate model from pretrained")
+        cur_model_dir = os.path.join(models_dir, model_name)
+        
+        os.makedirs(cur_model_dir, exist_ok=True)
 
         model_pretrained = StarDist2D.from_pretrained(pretrained)
         shutil.copytree(model_pretrained.logdir, cur_model_dir, dirs_exist_ok=True)
 
         # create new model from folder (loading the  pretrained weights)
-        model = StarDist2D(None, name=model_name, basedir=basedir)
+        model = StarDist2D(None, name=model_name, basedir=models_dir)
     
     if learning_rate is not None:
         model.config.train_learning_rate = learning_rate
+
+    os.makedirs(os.path.join(cur_model_dir, 'quality_control'), exist_ok=True)
 
     print("Instantiated model")
 

@@ -34,47 +34,54 @@ def load_data(data_dir):
         # Append the image and mask to the lists
         X.append(image)
         Y.append(mask)
-        files.append(os.path.basename(image_file))
+        files.append(image_file)
 
     return X, Y, files
 
 
-def train_test_split(X, Y, filenames, val_prop=0.1, seed=42):
-    rng = np.random.RandomState(seed)
-    ind = rng.permutation(len(X))
-    n_test = max(1, int(round(val_prop * len(ind))))
-    ind_train, ind_test = ind[:-n_test], ind[-n_test:]
-    X_test, Y_test = [X[i] for i in ind_test]  , [Y[i] for i in ind_test]
-    X_train, Y_train = [X[i] for i in ind_train], [Y[i] for i in ind_train] 
-    filenames_train, filenames_test = [filenames[i] for i in ind_train], [filenames[i] for i in ind_test]
-    print('number of images: %3d' % len(X))
-    print('- training:       %3d' % len(X_train))
-    print('- test:     %3d' % len(X_test))
+import random
 
-    return (X_train, Y_train), (X_test, Y_test), (filenames_train, filenames_test)
+def train_test_val_split(
+    X: list, 
+    Y: list, 
+    filenames: list, 
+    test_prop: float, 
+    val_prop: float,
+    seed=42
+):
+    assert len(X) == len(Y) == len(filenames), "All inputs must be of the same length"
+    assert 0 <= test_prop <= 1, "test_prop must be between 0 and 1"
+    assert 0 <= val_prop <= 1, "val_prop must be between 0 and 1"
 
+    # Set the seed
+    random.seed(seed)
 
-def train_val_split(X, Y, val_prop=0.15, seed=42):
-    n_channel = 1 if X[0].ndim == 2 else X[0].shape[-1]
+    # Generate a shuffled list of indices
+    indices = list(range(len(X)))
+    random.shuffle(indices)
 
-    axis_norm = (0,1)   # normalize channels independently
-    # axis_norm = (0,1,2) # normalize channels jointly
+    # Compute split sizes
+    n_total = len(X)
+    n_test = int(n_total * test_prop)
+    n_val = int(n_total * val_prop)
+    n_train = n_total - n_test - n_val
 
-    X = [normalize(x,1,99.8,axis=axis_norm) for x in X]
-    Y = [fill_label_holes(y) for y in Y]
+    # Index splits
+    test_indices = indices[:n_test]
+    val_indices = indices[n_test:n_test + n_val]
+    train_indices = indices[n_test + n_val:]
 
-    rng = np.random.RandomState(seed)
-    ind = rng.permutation(len(X))
-    n_val = max(1, int(round(val_prop * len(ind))))
-    ind_train, ind_val = ind[:-n_val], ind[-n_val:]
-    X_val, Y_val = [X[i] for i in ind_val]  , [Y[i] for i in ind_val]
-    X_trn, Y_trn = [X[i] for i in ind_train], [Y[i] for i in ind_train] 
-    print('number of images: %3d' % len(X))
-    print('- training:       %3d' % len(X_trn))
-    print('- validation:     %3d' % len(X_val))
+    # Split data
+    X_train = [X[i] for i in train_indices]
+    Y_train = [Y[i] for i in train_indices]
 
-    return (X_trn, Y_trn), (X_val, Y_val)
+    X_test = [X[i] for i in test_indices]
+    Y_test = [Y[i] for i in test_indices]
 
+    X_val = [X[i] for i in val_indices]
+    Y_val = [Y[i] for i in val_indices]
 
+    files_train = [filenames[i] for i in train_indices]
+    files_test = [filenames[i] for i in test_indices]
 
-
+    return (X_train, Y_train), (X_test, Y_test), (X_val, Y_val), (files_train, files_test)
