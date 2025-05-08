@@ -3,6 +3,7 @@
 import os
 import numpy as np
 import shutil 
+import tensorflow as tf
 from stardist.models import Config2D, StarDist2D, StarDistData2D
 
 # from stardist.models import StarDist2D
@@ -33,7 +34,7 @@ def configure_model():
 #     return model
 
 
-def instantiate_model(models_dir, model_name, conf=None, learning_rate: float = None, pretrained=None):
+def instantiate_model(models_dir, model_name, conf=None, learning_rate: float = None, pretrained=None, early_stopping: bool = True):
     print(f"instantiate_model: PRETRAINED: {pretrained}")
     cur_model_dir = os.path.join(models_dir, model_name)
 
@@ -55,6 +56,21 @@ def instantiate_model(models_dir, model_name, conf=None, learning_rate: float = 
     
     if learning_rate is not None:
         model.config.train_learning_rate = learning_rate
+
+    if early_stopping:
+        model.prepare_for_training()
+        model.callbacks.append(
+            tf.keras.callbacks.EarlyStopping(
+                monitor='val_prob_loss',
+                min_delta=0.1,
+                patience=0,
+                verbose=0,
+                baseline=None,
+                restore_best_weights=False,
+                start_from_epoch=0,
+                mode='min',
+            )
+        )
 
     os.makedirs(os.path.join(cur_model_dir, 'quality_control'), exist_ok=True)
 
@@ -84,7 +100,7 @@ def instantiate_model(models_dir, model_name, conf=None, learning_rate: float = 
 # X[:, 10:20,10:20] = 1.1
 # Y = np.zeros((16,128,128), np.uint16)
 # Y[:, 10:20,10:20] = 1
-# 
+ 
 # # change some training params 
 # model.config.train_patch_size = (128,128)
 # model.config.train_batch_size = 16 
@@ -93,3 +109,4 @@ def instantiate_model(models_dir, model_name, conf=None, learning_rate: float = 
 # 
 # # finetune on new data
 # model.train(X,Y, validation_data=(X,Y))
+

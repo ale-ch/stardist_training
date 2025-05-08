@@ -37,9 +37,10 @@ singularity exec \
         --test_prop 0.1 \
         --val_prop 0.1 \
         --val_prop_opt 1.0 \
-        --random_seeds 42 51 \
-        --epochs_list 2 3 \
-        --steps_list 2 \
+        --random_seeds 42 \
+        --epochs_list 100 \
+        --steps_list 10 \
         --lr_list 0.0001 \
-        --augment_list True
+        --augment_list True \
+        --early_stopping True
 

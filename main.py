@@ -82,7 +82,7 @@ def plot_metrics(Y_val, Y_val_pred, taus):
 
     return fig1, fig2
 
-def save_config_to_json(model_name, epochs, steps_per_epoch, learning_rate, augment,
+def save_config_to_json(model_name, epochs, steps_per_epoch, learning_rate, augment, early_stopping,
                         val_prop, val_prop_opt, random_seed, files_train, files_test,
                         file_path="config.json"):
     config = {
@@ -91,6 +91,7 @@ def save_config_to_json(model_name, epochs, steps_per_epoch, learning_rate, augm
         "steps_per_epoch": steps_per_epoch,
         "learning_rate": learning_rate,
         "augment": augment,
+        "early_stopping": early_stopping,
         "val_prop": val_prop,
         "val_prop_opt": val_prop_opt,
         "random_seed": random_seed,
@@ -154,7 +155,7 @@ def train_and_evaluate(config):
     )
 
     save_config_to_json(model_name, config['epochs'], config['steps_per_epoch'], config['learning_rate'],
-                        config['augment'], config['val_prop'], config['val_prop_opt'], config['random_seed'],
+                        config['augment'], config['early_stopping'], config['val_prop'], config['val_prop_opt'], config['random_seed'],
                         files_train, files_test, file_path=os.path.join(cur_model_dir, "training_config.json"))
 
     size = int(len(X_val) * config['val_prop_opt'])
@@ -165,7 +166,7 @@ def train_and_evaluate(config):
     conf = configure_model() if config['pretrained'] is None else None
     augmenter = default_augmenter if config['augment'] else None
 
-    model = instantiate_model(models_dir, model_name, conf, config['learning_rate'], config['pretrained'])
+    model = instantiate_model(models_dir, model_name, conf, config['learning_rate'], config['pretrained'], config['early_stopping'])
 
     run = wandb.init(
         project="stardist-training",
@@ -218,6 +219,7 @@ def parse_args():
     parser.add_argument('--steps_list', nargs='+', type=int, default=[4, 8])
     parser.add_argument('--lr_list', nargs='+', type=float, default=[1e-4, 1e-3])
     parser.add_argument('--augment_list', nargs='+', type=str, default=['True', 'False'])
+    parser.add_argument('--early_stopping_list', nargs='+', type=str, default=['True', 'False'])
     parser.add_argument('--demo', action='store_true')
     return parser.parse_args()
 
@@ -239,6 +241,7 @@ def main():
         "steps_per_epoch": args.steps_list,
         "learning_rate": args.lr_list,
         "augment": [x.lower() == 'true' for x in args.augment_list],
+        "early_stopping": [x.lower() == 'true' for x in args.early_stopping_list],
         "random_seed": args.random_seeds
     }
 
@@ -250,7 +253,7 @@ def main():
         run_config.update(params)
         run_config["model_name"] = (
             f"stardist_e{params['epochs']}_s{params['steps_per_epoch']}_"
-            f"lr{params['learning_rate']}_aug{params['augment']}_seed{params['random_seed']}"
+            f"lr{params['learning_rate']}_aug{params['augment']}_es{params['early_stopping']}_seed{params['random_seed']}"
         )
         configs.append(run_config)
 
