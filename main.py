@@ -5,6 +5,7 @@ import argparse
 import numpy as np
 import wandb
 import multiprocessing
+import json
 
 from itertools import product
 
@@ -39,19 +40,26 @@ def train_and_evaluate(config):
         X, Y, files, test_prop=config['test_prop'], val_prop=config['val_prop'], seed=config['random_seed']
     )
 
-    save_config_to_json(model_name, config['epochs'], config['steps_per_epoch'], config['learning_rate'],
-                        config['augment'], config['early_stopping'], config['val_prop'], config['val_prop_opt'], config['random_seed'],
-                        files_train, files_test, file_path=os.path.join(cur_model_dir, "training_config.json"))
+    save_config_to_json(model_name, config, files_train, files_test, file_path=os.path.join(cur_model_dir, "training_config.json"))
+
 
     size = int(len(X_val) * config['val_prop_opt'])
     sampled_idx = np.random.randint(0, high=len(X_val), size=size, dtype=int)
     X_val_opt = [X_val[i] for i in sampled_idx]
     Y_val_opt = [Y_val[i] for i in sampled_idx]
 
-    conf = configure_model() if config['pretrained'] is None else None
+    architecture_conf = configure_model() if config['pretrained'] is None else None
     augmenter = default_augmenter if config['augment'] else None
 
-    model = instantiate_model(models_dir, model_name, conf, config['learning_rate'], config['pretrained'], config['early_stopping'])
+    model = instantiate_model(
+        models_dir, 
+        model_name, 
+        architecture_conf, 
+        config
+        # config['learning_rate'], 
+        # config['pretrained'], 
+        # config['early_stopping']
+    )
 
     run = wandb.init(
         project="stardist-training",
@@ -103,10 +111,12 @@ def parse_args():
     parser.add_argument('--epochs_list', nargs='+', type=int, default=[5, 10])
     parser.add_argument('--steps_list', nargs='+', type=int, default=[4, 8])
     parser.add_argument('--lr_list', nargs='+', type=float, default=[1e-4, 1e-3])
+    parser.add_argument('--train_reduce_lr_list', nargs='+', type=str, default=[])
+    parser.add_argument('--early_stopping_list', nargs='+', type=str, default=[])
     parser.add_argument('--augment_list', nargs='+', type=str, default=['True', 'False'])
-    parser.add_argument('--early_stopping_list', nargs='+', type=str, default=['True', 'False'])
     parser.add_argument('--demo', action='store_true')
     return parser.parse_args()
+
 
 def main():
     args = parse_args()
@@ -121,12 +131,16 @@ def main():
         "val_prop_opt": args.val_prop_opt
     }
 
+    train_reduce_lr_dicts = [json.loads(item) for item in args.train_reduce_lr_list]
+    early_stopping_dicts = [json.loads(item) for item in args.early_stopping_list]
+
     param_grid = {
         "epochs": args.epochs_list,
         "steps_per_epoch": args.steps_list,
         "learning_rate": args.lr_list,
         "augment": [x.lower() == 'true' for x in args.augment_list],
-        "early_stopping": [x.lower() == 'true' for x in args.early_stopping_list],
+        "early_stopping": early_stopping_dicts,
+        "train_reduce_lr": train_reduce_lr_dicts,
         "random_seed": args.random_seeds
     }
 
@@ -138,12 +152,16 @@ def main():
         run_config.update(params)
         run_config["model_name"] = (
             f"stardist_e{params['epochs']}_s{params['steps_per_epoch']}_"
-            f"lr{params['learning_rate']}_aug{params['augment']}_es{params['early_stopping']}_seed{params['random_seed']}"
+            f"lr{params['learning_rate']}_aug{params['augment']}_"
+            f"es{params['early_stopping'].get('patience', 'na')}_"
+            f"lrred{params['train_reduce_lr'].get('patience', 'na')}_"
+            f"seed{params['random_seed']}"
         )
         configs.append(run_config)
 
     with multiprocessing.Pool(processes=min(len(configs), multiprocessing.cpu_count())) as pool:
         pool.map(train_and_evaluate, configs)
+
 
 if __name__ == '__main__':
     main()

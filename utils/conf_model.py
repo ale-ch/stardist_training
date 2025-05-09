@@ -20,27 +20,23 @@ def configure_model():
 
     return conf
 
-    # model = StarDist2D(conf, name='stardist_v3', basedir='models/instance_segmentation_2D_akoya')
 
-# def instantiate_model(conf, basedir, model_name, pretrained='2D_versatile_fluo'):
-# 
-#     if pretrained is None:
-#         model = StarDist2D(conf, name=model_name, basedir=basedir)
-#     else:
-#         model = StarDist2D.from_pretrained(pretrained)
-# 
-#     print("Instantiated model") 
-# 
-#     return model
-
-
-def instantiate_model(models_dir, model_name, conf=None, learning_rate: float = None, pretrained=None, early_stopping: bool = True):
-    print(f"instantiate_model: PRETRAINED: {pretrained}")
+def instantiate_model(
+        models_dir, 
+        model_name, 
+        architecture_conf=None,
+        config: dict = None,  
+        # learning_rate: float = None, 
+        # train_reduce_lr: dict = None,
+        # pretrained=None, 
+        # early_stopping: dict = None,
+    ):
+    print(f"instantiate_model: PRETRAINED: {config['pretrained']}")
     cur_model_dir = os.path.join(models_dir, model_name)
 
-    if pretrained is None:
+    if config["pretrained"] is None:
         print("instantiate_model: Instantiate model from scratch")
-        model = StarDist2D(conf, name=model_name, basedir=models_dir)
+        model = StarDist2D(architecture_conf, name=model_name, basedir=models_dir)
 
     else:
         print("instantiate_model: Instantiate model from pretrained")
@@ -48,29 +44,47 @@ def instantiate_model(models_dir, model_name, conf=None, learning_rate: float = 
         
         os.makedirs(cur_model_dir, exist_ok=True)
 
-        model_pretrained = StarDist2D.from_pretrained(pretrained)
+        model_pretrained = StarDist2D.from_pretrained(config["pretrained"])
         shutil.copytree(model_pretrained.logdir, cur_model_dir, dirs_exist_ok=True)
 
         # create new model from folder (loading the  pretrained weights)
         model = StarDist2D(None, name=model_name, basedir=models_dir)
     
-    if learning_rate is not None:
-        model.config.train_learning_rate = learning_rate
+    if config["learning_rate"] is not None:
+        model.config.train_learning_rate = config["learning_rate"]
 
-    if early_stopping:
+    if config["train_reduce_lr"] is not None:
+        print("train_reduce_lr: ", config["train_reduce_lr"])
+        model.config.train_reduce_lr["factor"] = config["train_reduce_lr"]["factor"]
+        model.config.train_reduce_lr["patience"] = config["train_reduce_lr"]["patience"]
+        model.config.train_reduce_lr["min_delta"] = config["train_reduce_lr"]["min_delta"]
+
+
+    if config["early_stopping"] is not None:
+        print("early_stopping: ", config["early_stopping"])
         model.prepare_for_training()
         model.callbacks.append(
             tf.keras.callbacks.EarlyStopping(
-                monitor='val_prob_loss',
-                min_delta=0.1,
-                patience=0,
-                verbose=0,
-                baseline=None,
-                restore_best_weights=False,
-                start_from_epoch=0,
-                mode='min',
+                monitor=config["early_stopping"]["monitor"],
+                min_delta=config["early_stopping"]["min_delta"],
+                patience=config["early_stopping"]["patience"],
+                verbose=config["early_stopping"]["verbose"],
+                baseline=config["early_stopping"]["baseline"],
+                restore_best_weights=config["early_stopping"]["restore_best_weights"],
+                start_from_epoch=config["early_stopping"]["start_from_epoch"],
+                mode=config["early_stopping"]["mode"],
             )
         )
+
+        # early_stopping["monitor"] = 'val_prob_loss'
+        # early_stopping["min_delta"] = 0.1
+        # early_stopping["patience"] = 0
+        # early_stopping["verbose"] = 0
+        # early_stopping["baseline"] = None
+        # early_stopping["restore_best_weights"] = False
+        # early_stopping["start_from_epoch"] = 0
+        # early_stopping["mode"] = 'min'
+
 
     os.makedirs(os.path.join(cur_model_dir, 'quality_control'), exist_ok=True)
 
