@@ -3,134 +3,19 @@
 import os
 import argparse
 import numpy as np
-import json
-import pickle
-import tifffile as tiff
-import matplotlib.pyplot as plt
 import wandb
 import multiprocessing
+
 from itertools import product
 
-from cellpose.utils import masks_to_outlines
-from skimage.transform import rescale
-from stardist import fill_label_holes
-from csbdeep.utils import normalize
-from utils.get_data import download_data, load_data, train_test_val_split
+from utils.get_data import download_data, train_test_val_split
 from utils.conf_model import configure_model, instantiate_model
-from stardist.matching import matching_dataset
+from utils.preprocessing import preprocess_data
+from utils.quality_control import quality_control, plot_metrics
+from utils.data_augmentation import default_augmenter
+from utils.io_tools import load_data
+from utils.metadata_tools import save_config_to_json
 
-
-def save_pickle(object, path):
-    with open(path, "wb") as file:
-        pickle.dump(object, file)
-
-def load_pickle(path):
-    with open(path, "rb") as file:
-        return pickle.load(file)
-
-def normalize_image(image):
-    min_val = image.min(axis=(1, 2), keepdims=True)
-    max_val = image.max(axis=(1, 2), keepdims=True)
-    scaled_image = (image - min_val) / (max_val - min_val) * 255
-    return scaled_image.astype(np.uint8)
-
-def rescale_to_uint8(image):
-    min_val = image.min(axis=(1, 2), keepdims=True)
-    max_val = image.max(axis=(1, 2), keepdims=True)
-    image = (image - min_val) / (max_val - min_val) * 255
-    return image.astype(np.uint8)
-
-def random_fliprot(img, mask): 
-    axes = tuple(range(img.ndim)) 
-    perm = np.random.permutation(axes)
-    img = img.transpose(perm) 
-    mask = mask.transpose(perm) 
-    for ax in axes: 
-        if np.random.rand() > 0.5:
-            img = np.flip(img, axis=ax)
-            mask = np.flip(mask, axis=ax)
-    return img, mask 
-
-def random_intensity_change(img):
-    return img * np.random.uniform(0.6, 2)
-
-def default_augmenter(img, mask):
-    img, mask = random_fliprot(img, mask)
-    img = random_intensity_change(img)
-    return img, mask
-
-def plot_metrics(Y_val, Y_val_pred, taus):
-    stats = [matching_dataset(Y_val, Y_val_pred, thresh=t, show_progress=False) for t in taus]
-
-    fig1, ax1 = plt.subplots(figsize=(7,5))
-    for m in ('precision', 'recall', 'accuracy', 'f1', 'mean_true_score'):
-        ax1.plot(taus, [s._asdict()[m] for s in stats], '.-', lw=2, label=m)
-    ax1.set_xlabel(r'IoU threshold $\tau$')
-    ax1.set_ylabel('Metric value')
-    ax1.grid()
-    ax1.legend()
-    plt.close(fig1)
-
-    fig2, ax2 = plt.subplots(figsize=(7,5))
-    for m in ('fp', 'tp', 'fn'):
-        ax2.plot(taus, [s._asdict()[m] for s in stats], '.-', lw=2, label=m)
-    ax2.set_xlabel(r'IoU threshold $\tau$')
-    ax2.set_ylabel('Number #')
-    ax2.grid()
-    ax2.legend()
-    plt.close(fig2)
-
-    return fig1, fig2
-
-def save_config_to_json(model_name, epochs, steps_per_epoch, learning_rate, augment, early_stopping,
-                        val_prop, val_prop_opt, random_seed, files_train, files_test,
-                        file_path="config.json"):
-    config = {
-        "model_name": model_name,
-        "epochs": epochs,
-        "steps_per_epoch": steps_per_epoch,
-        "learning_rate": learning_rate,
-        "augment": augment,
-        "early_stopping": early_stopping,
-        "val_prop": val_prop,
-        "val_prop_opt": val_prop_opt,
-        "random_seed": random_seed,
-        "files_train": files_train,
-        "files_test": files_test
-    }
-
-    with open(file_path, "w") as f:
-        json.dump(config, f, indent=4)
-
-def quality_control(model, X_test, Y_test, files_test, qc_outdir):
-    for img, mask, file in zip(X_test, Y_test, files_test):
-        filename = os.path.basename(file)
-        output_path = os.path.join(qc_outdir, filename)
-
-        img = normalize(img, 1, 99.8, axis=(0, 1))
-        pred, _ = model.predict_instances(img, verbose=True)
-
-        outlines_test = np.array(masks_to_outlines(mask), dtype="float32")
-        outlines_pred = np.array(masks_to_outlines(pred), dtype="float32")
-
-        output_array = np.stack([img, mask, pred, outlines_test, outlines_pred], axis=0).astype("float32")
-        output_array = normalize_image(output_array)
-        output_array = np.array([rescale(ch, scale=1, anti_aliasing=(i==0)) for i, ch in enumerate(output_array)])
-        output_array = rescale_to_uint8(output_array)
-
-        pixel_microns = 0.34533768547788
-        tiff.imwrite(
-            output_path, 
-            output_array, 
-            imagej=True, 
-            resolution=(1/pixel_microns, 1/pixel_microns), 
-            metadata={'unit': 'um', 'axes': 'CYX', 'mode': 'composite'}
-        )
-
-def preprocess_data(X, Y):
-    X = [normalize(x,1,99.8,axis=(0,1)) for x in X]
-    Y = [fill_label_holes(y) for y in Y]
-    return X, Y
 
 def train_and_evaluate(config):
     model_name = config['model_name']

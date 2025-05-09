@@ -1,13 +1,7 @@
 #!/usr/bin/env python
 
-import os
-import numpy as np
-from tifffile import imread
-from csbdeep.utils import download_and_extract_zip_file, Path, normalize
-
-from stardist import fill_label_holes
-
-
+import random
+from csbdeep.utils import download_and_extract_zip_file
 
 def download_data(target_dir):
     download_and_extract_zip_file(
@@ -15,31 +9,7 @@ def download_data(target_dir):
         targetdir = target_dir,
         verbose   = 1,
     )
-
-
-def load_data(data_dir):
-    masks_dir = os.path.join(data_dir, 'masks')
-    images_dir = os.path.join(data_dir, 'images')
-
-    images_files = sorted([os.path.join(images_dir, f) for f in os.listdir(images_dir)])
-    masks_files = sorted([os.path.join(masks_dir, f) for f in os.listdir(masks_dir)])
-
-    X = []
-    Y = []
-    files = []
-    for image_file, mask_file in zip(images_files, masks_files):
-        image = imread(image_file)
-        mask = imread(mask_file)
-
-        # Append the image and mask to the lists
-        X.append(image)
-        Y.append(mask)
-        files.append(image_file)
-
-    return X, Y, files
-
-
-import random
+    
 
 def train_test_val_split(
     X: list, 
