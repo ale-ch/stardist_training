@@ -6,21 +6,20 @@ val_prop: 0.1
 val_prop_opt: 1.0
 epochs: 10
 steps_per_epoch: 2
-learning_rate: 0.0001
+learning_rate: (0.0001, 0.0002, 0.0001)  # start, end, step
 augment: true
-random_seed: 42
+random_seed: 111
 
 early_stopping:
   monitor: val_prob_loss
-  min_delta: 0.1
-  patience: 5
+  min_delta: [0.1, 0.5]
+  patience: 3
   verbose: 0
   restore_best_weights: false
   start_from_epoch: 0
   mode: min
 
 train_reduce_lr:
-  factor: 0.5
-  patience: 5
-  min_delta: 0.0001
-
+  factor: 0.3
+  patience: 3
+  min_delta: 0.1
