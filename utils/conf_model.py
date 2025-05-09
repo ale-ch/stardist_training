@@ -25,16 +25,17 @@ def instantiate_model(
         models_dir, 
         model_name, 
         architecture_conf=None,
-        config: dict = None,  
-        # learning_rate: float = None, 
-        # train_reduce_lr: dict = None,
-        # pretrained=None, 
-        # early_stopping: dict = None,
+        config: dict = None, 
     ):
-    print(f"instantiate_model: PRETRAINED: {config['pretrained']}")
+
     cur_model_dir = os.path.join(models_dir, model_name)
 
-    if config["pretrained"] is None:
+    learning_rate = config.get('learning_rate')
+    pretrained = config.get('pretrained' )
+    early_stopping = config.get('early_stopping')
+    train_reduce_lr = config.get('train_reduce_lr')
+
+    if pretrained is None:
         print("instantiate_model: Instantiate model from scratch")
         model = StarDist2D(architecture_conf, name=model_name, basedir=models_dir)
 
@@ -44,46 +45,46 @@ def instantiate_model(
         
         os.makedirs(cur_model_dir, exist_ok=True)
 
-        model_pretrained = StarDist2D.from_pretrained(config["pretrained"])
+        model_pretrained = StarDist2D.from_pretrained(pretrained)
         shutil.copytree(model_pretrained.logdir, cur_model_dir, dirs_exist_ok=True)
 
         # create new model from folder (loading the  pretrained weights)
         model = StarDist2D(None, name=model_name, basedir=models_dir)
     
-    if config["learning_rate"] is not None:
-        model.config.train_learning_rate = config["learning_rate"]
+    if learning_rate is not None:
+        model.config.train_learning_rate = learning_rate
 
-    if config["train_reduce_lr"] is not None:
-        print("train_reduce_lr: ", config["train_reduce_lr"])
-        model.config.train_reduce_lr["factor"] = config["train_reduce_lr"]["factor"]
-        model.config.train_reduce_lr["patience"] = config["train_reduce_lr"]["patience"]
-        model.config.train_reduce_lr["min_delta"] = config["train_reduce_lr"]["min_delta"]
+    if train_reduce_lr is not None:
+        print("train_reduce_lr: ", train_reduce_lr)
+        model.config.train_reduce_lr["factor"] = train_reduce_lr["factor"]
+        model.config.train_reduce_lr["patience"] = train_reduce_lr["patience"]
+        model.config.train_reduce_lr["min_delta"] = train_reduce_lr["min_delta"]
 
 
-    if config["early_stopping"] is not None:
-        print("early_stopping: ", config["early_stopping"])
+    if early_stopping is not None:
+        print("early_stopping: ", early_stopping)
+
+        keys_list = ["monitor", "min_delta", "patience", "verbose", "baseline", "restore_best_weights", "start_from_epoch", "mode"]
+
+        for key in keys_list:
+            if key not in early_stopping:
+                early_stopping[key] = None
+
         model.prepare_for_training()
         model.callbacks.append(
             tf.keras.callbacks.EarlyStopping(
-                monitor=config["early_stopping"]["monitor"],
-                min_delta=config["early_stopping"]["min_delta"],
-                patience=config["early_stopping"]["patience"],
-                verbose=config["early_stopping"]["verbose"],
-                baseline=config["early_stopping"]["baseline"],
-                restore_best_weights=config["early_stopping"]["restore_best_weights"],
-                start_from_epoch=config["early_stopping"]["start_from_epoch"],
-                mode=config["early_stopping"]["mode"],
+                monitor=early_stopping["monitor"],
+                min_delta=early_stopping["min_delta"],
+                patience=early_stopping["patience"],
+                verbose=early_stopping["verbose"],
+                baseline=early_stopping["baseline"],
+                restore_best_weights=early_stopping["restore_best_weights"],
+                start_from_epoch=early_stopping["start_from_epoch"],
+                mode=early_stopping["mode"],
             )
         )
 
-        # early_stopping["monitor"] = 'val_prob_loss'
-        # early_stopping["min_delta"] = 0.1
-        # early_stopping["patience"] = 0
-        # early_stopping["verbose"] = 0
-        # early_stopping["baseline"] = None
-        # early_stopping["restore_best_weights"] = False
-        # early_stopping["start_from_epoch"] = 0
-        # early_stopping["mode"] = 'min'
+
 
 
     os.makedirs(os.path.join(cur_model_dir, 'quality_control'), exist_ok=True)
@@ -123,4 +124,14 @@ def instantiate_model(
 # 
 # # finetune on new data
 # model.train(X,Y, validation_data=(X,Y))
+
+
+# early_stopping["monitor"] = 'val_prob_loss'
+# early_stopping["min_delta"] = 0.1
+# early_stopping["patience"] = 0
+# early_stopping["verbose"] = 0
+# early_stopping["baseline"] = None
+# early_stopping["restore_best_weights"] = False
+# early_stopping["start_from_epoch"] = 0
+# early_stopping["mode"] = 'min'
 
