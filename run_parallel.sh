@@ -37,10 +37,11 @@ singularity exec \
         --test_prop 0.1 \
         --val_prop 0.1 \
         --val_prop_opt 1.0 \
-        --random_seeds 42 \
-        --epochs_list 100 \
-        --steps_list 10 \
+        --random_seeds 1238 \
+        --epochs_list 10 \
+        --steps_list 2 \
         --lr_list 0.0001 \
+        --train_reduce_lr '{"factor": 0.5, "patience": 5, "min_delta": 0.0001}' '{"factor": 0.1, "patience": 10, "min_delta": 0.0002}' \
         --augment_list True \
-        --early_stopping True
+        --early_stopping_list '{"monitor": "val_prob_loss", "min_delta": 0.1, "patience": 0, "verbose": 0, "baseline": null, "restore_best_weights": false, "start_from_epoch": 0, "mode": "min"}'
 
