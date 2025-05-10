@@ -16,4 +16,3 @@ singularity exec \
         --base_dir ${base_dir} \
         --data_dir ${data_dir} \
         --config_file ${config_file}
-
