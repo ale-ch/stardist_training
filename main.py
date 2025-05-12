@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 
-import os
 import argparse
 import yaml
 import multiprocessing
 from pydantic import ValidationError
 from utils.config_validation import TrainingConfig
-from utils.metadata_tools import save_config_to_json
 from utils.training import generate_hyperparameter_grid, train_and_evaluate
 
 
@@ -40,11 +38,6 @@ def main():
     configs = generate_hyperparameter_grid(config_dict)
 
     print(f"Generated {len(configs)} hyperparameter combinations")
-
-    configs_dir = os.path.join(config_dict['base_dir'], 'configurations')
-    os.makedirs(configs_dir, exist_ok=True)
-    for i, cfg in enumerate(configs):
-        save_config_to_json(cfg, os.path.join(configs_dir, f"config_{i}.json"))
 
     with multiprocessing.Pool(processes=args.workers) as pool:
         pool.map(train_and_evaluate, configs)
