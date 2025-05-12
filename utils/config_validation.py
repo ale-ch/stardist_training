@@ -22,8 +22,8 @@ class EarlyStoppingConfig(BaseModel):
 
 
 class ReduceLrConfig(BaseModel):
-    factor: Union[float, List[float], str] = Field(..., gt=0.0, lt=1.0)
-    patience: Union[int, List[int], str] = Field(..., ge=1)
+    factor: Union[float, List[float], str] # = Field(..., gt=0.0, lt=1.0)
+    patience: Union[int, List[int], str] # = Field(..., ge=1)
     min_delta: Union[float, List[float], str]
 
     @validator('factor', 'patience', 'min_delta')
@@ -38,14 +38,14 @@ class TrainingConfig(BaseModel):
     model_name: str
     demo: bool = False
     pretrained: Optional[Union[str, List[str]]]
-    test_prop: Union[float, List[float], str] = Field(..., gt=0, lt=1)
-    val_prop: Union[float, List[float], str] = Field(..., gt=0, lt=1)
-    val_prop_opt: Union[float, List[float], str] = Field(..., gt=0, le=1)
-    epochs: Union[int, List[int], str] = Field(..., gt=0)
-    steps_per_epoch: Union[int, List[int], str] = Field(..., gt=0)
+    test_prop: Union[float, List[float], str] 
+    val_prop: Union[float, List[float], str] 
+    val_prop_opt: Union[float, List[float], str] 
+    epochs: Union[int, List[int], str]
+    steps_per_epoch: Union[int, List[int], str]
     learning_rate: Union[float, List[float], str]
     augment: Union[bool, List[bool]]
-    random_seed: int
+    random_seed: Union[int, List[int]]
     early_stopping: Optional[EarlyStoppingConfig]
     train_reduce_lr: Optional[ReduceLrConfig]
     base_dir: Optional[str]
