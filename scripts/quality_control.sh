@@ -1,45 +1,16 @@
-# stardist_e100_spe50_vp0.1_vpp1  stardist_e150_spe50_vp0.1_vpp1  stardist_e200_spe50_vp0.1_vpp1  stardist_e50_spe50_vp0.1_vpp1  stardist_e80_spe50_vp0.1_vpp1
-
-
 singularity_imgs_dir=/hpcnfs/scratch/DIMA/chiodin/singularity_images
 scripts_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/stardist_training
-
-#model_name=stardist_e80_spe50_vp0.1_vpp1
-
-model_name=stardist_e25_spe50_lr0.0001_vp0.1_vpp1
-
-run_name=20250505
-
-gt_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/runs/${run_name}/data/test/masks
-
-test_imgs_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/runs/${run_name}/data/test/images
-
-preds_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/runs/${run_name}/predictions/${model_name}
-
-models_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/runs/${run_name}/models
-
-qc_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/runs/${run_name}/quality_control/${model_name}
-
-
-mkdir -p ${preds_dir}
-mkdir -p ${qc_dir}
+#model_name=stardist_full_e200_lr00001_aug1_seed10_es50p0.001_rlr0.5p50
+models_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/runs/20250514/runs/10/models
+model_name=stardist_fixed_full_e200_lr00001_aug1_seed10_es200p0.001_rlr0.5p200
+test_imgs_dir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/runs/20250514/test_images
+outdir=/hpcnfs/scratch/DIMA/chiodin/tests/stardist_training_notebook/runs/20250514/predictions
 
 singularity exec \
     -B /hpcnfs \
-    ${singularity_imgs_dir}/stardist_training.sif \
-    python ${scripts_dir}/scripts/predict.py \
+    ${singularity_imgs_dir}/stardist_training_v02.sif \
+    python ${scripts_dir}/scripts/predict2.py \
         --model_name ${model_name} \
         --models_dir ${models_dir} \
         --test_imgs_dir ${test_imgs_dir} \
-        --outdir ${preds_dir}
-
-
-
-
-singularity exec \
-    -B /hpcnfs \
-    ${singularity_imgs_dir}/stardist_training.sif \
-    python ${scripts_dir}/scripts/quality_control.py \
-        --preds_dir ${preds_dir} \
-        --gt_dir ${gt_dir} \
-        --outdir ${qc_dir}
+        --outdir ${outdir}

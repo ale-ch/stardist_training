@@ -1,8 +1,42 @@
 import argparse
 import os
-from stardist.models import StarDist2D
 import tifffile as tiff
+import numpy as np 
 from csbdeep.utils import normalize
+from stardist.models import StarDist2D
+from utils.preprocessing import rescale_to_uint8
+from csbdeep.utils import normalize
+from stardist.matching import matching_dataset
+from cellpose.utils import masks_to_outlines
+from skimage.transform import rescale
+from stardist.matching import matching_dataset
+
+
+def quality_control(model, X_test, Y_test, files_test, qc_outdir):
+    for img, mask, file in zip(X_test, Y_test, files_test):
+        filename = os.path.basename(file)
+        output_path = os.path.join(qc_outdir, filename)
+
+        img = normalize(img, 1, 99.8, axis=(0, 1))
+        pred, _ = model.predict_instances(img, verbose=True)
+
+        outlines_test = np.array(masks_to_outlines(mask), dtype="float32")
+        outlines_pred = np.array(masks_to_outlines(pred), dtype="float32")
+
+        output_array = np.stack([img, mask, pred, outlines_test, outlines_pred], axis=0).astype("float32")
+        output_array = rescale_to_uint8(output_array)
+        output_array = np.array([rescale(ch, scale=1, anti_aliasing=(i==0)) for i, ch in enumerate(output_array)])
+        output_array = rescale_to_uint8(output_array)
+
+        pixel_microns = 0.34533768547788
+        tiff.imwrite(
+            output_path, 
+            output_array, 
+            imagej=True, 
+            resolution=(1/pixel_microns, 1/pixel_microns), 
+            metadata={'unit': 'um', 'axes': 'CYX', 'mode': 'composite'}
+        )
+
 
 def main():
     parser = argparse.ArgumentParser(description="Run StarDist2D prediction on a test image.")
