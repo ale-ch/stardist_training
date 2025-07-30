@@ -6,7 +6,7 @@
 - `scripts/` - Scripts to test/use individual components of the pipeline
 - `utils/` - Utility functions for the pipeline
 - `main.py` - Main script to run the Stardist training pipeline
-- `export_model_tf1.py` - Script to convert Stardist models to TensorFlow 1 format
+- `export_model_tf1.py` - Script to convert Stardist models to TensorFlow 1 format (to be used in Imagej Fiji)
 
 ## Run Options
 
